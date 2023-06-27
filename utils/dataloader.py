@@ -1,6 +1,24 @@
 import pandas as pd
 import numpy as np 
 
+def expand_gateway(value_all_loc, num_gate = 10):
+    '''
+    Duplicate the price/carbon/water of each location to all gateways
+    Args:
+        value_all_loc: value array with size of [num_loc, num_steps]
+        num_gate: number of gateways in the system
+    Return:
+        value_all_loc: value array with size of [num_loc*num_gate, num_steps]
+    '''
+    value_all_loc = np.expand_dims(value_all_loc, axis=1)
+    value_all_loc = np.repeat(value_all_loc, num_gate, axis=1)
+    
+    num_ins       = value_all_loc.shape[-1]
+    value_all_loc = value_all_loc.reshape([-1, num_ins])
+    
+    return value_all_loc
+
+
 def load_indirect_WUE(fuel_mix_path, dc_loc):
     '''
     Indirect water
