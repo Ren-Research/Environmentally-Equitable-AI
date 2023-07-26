@@ -1,6 +1,6 @@
 # Towards Environmentally Equitable AI via Geographical Load Balancing
 
-[![MIT licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE.md)  
+[![MIT licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE.md)   [![arxiv](https://img.shields.io/badge/cs.AI-arXiv%3A2307.05494-B31B1B.svg)](https://arxiv.org/abs/2307.05494)
 
 
 [Pengfei Li](https://www.cs.ucr.edu/~pli081/), [Jianyi Yang](https://jyang-ai.github.io/), [Adam Wierman](https://adamwierman.com/) and [Shaolei Ren](https://intra.ece.ucr.edu/~sren/)
