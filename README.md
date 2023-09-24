@@ -8,7 +8,7 @@
 
 **Note**
 
-This is the official implementation of the arxiv paper. The codes will be avaliable soon.
+This is the official implementation of the arxiv paper. 
 
 
 
