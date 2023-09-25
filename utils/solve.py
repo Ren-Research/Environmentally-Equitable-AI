@@ -15,6 +15,8 @@ def offline_solver(price_all_loc, water_all_loc, carbon_all_loc,
         workload_trace  : Workload trace
         mask_array      : Array with size of [10, 10, num_ins]
         num_ins         : Number of timesteps to solve
+        l_1             : Water coeficiency
+        l_2             : Carbon coeficiency
     Return:
         optimal_cost:
         action_mask:
@@ -72,40 +74,77 @@ def offline_solver(price_all_loc, water_all_loc, carbon_all_loc,
     return optimal_cost, action_mask
 
 
-def evaluate_single(action_mask, price_all_loc):
+def solve_action(virtual_price, workload, max_cap, mask_array, num_nodes = 10):
     '''
-    Evaluate the price of single resource
+    Solve the reward function problem arg min x∈Xt {⟨pt, xt⟩ + γt · bt · xt} 
+    Args:
+        virtual_price   : Energy price of all locations [num_ins, num_ins]
+        workload        : Workload trace
+        max_cap         : The maximum capability of datacenter
+        mask_array      : Array with size of [num_ins, num_ins]
+        num_nodes       : Number of datacenter
+    Return:
+        action_mask     : Action based on mask
+        optimal_cost    : Optimal cost 
     '''
-    price_tensor  = price_all_loc.reshape([10,10,-1])
-    price_res     = np.multiply(price_tensor, action_mask)
-    price_res     = price_res.sum(axis=(1,2))
+    assert virtual_price.shape == (num_nodes, num_nodes)
     
-    return price_res
+    x            = cp.Variable([num_nodes, num_nodes])
+    x_masked     = cp.multiply(x, mask_array)
+    
+    constraints = []
+    for i in range(10):
+        c_i = [
+            cp.sum(x_masked[i, :]) <= max_cap,
+            cp.sum(x_masked[:, i]) == workload[i]
+        ]
+        
+        constraints += c_i
+    constraints += [x_masked >= 0]
+    
+    total_cost   = cp.sum(cp.multiply(x_masked, virtual_price))
+    objective    = cp.Minimize(total_cost)
+    prob         = cp.Problem(objective, constraints)
+    prob.solve(verbose = False)
+    
+    optimal_cost   = prob.value
+    action_optimal = x.value
+    action_mask    = np.multiply(action_optimal, mask_array)
+    
+    return action_mask, optimal_cost
 
-def evaluate_total(action_mask, price_all_loc, carbon_all_loc, 
-                   water_all_loc, l_1, l_2, 
-                   verbose = True, l_0 = 1):
+def solve_auxiliary(vector_gamma, z_max_array, num_nodes = 10):
     '''
-    Evaluate the total cost of the policy
-    '''    
-    price_res   = evaluate_single(action_mask, price_all_loc)
-    carbon_res  = evaluate_single(action_mask, carbon_all_loc)
-    water_res   = evaluate_single(action_mask, water_all_loc)
+    Solve the reward problem
+    Args:
+        vector_gamma    : Vector of gamma_t
+        z_max_array     : the maximum value of z
+        num_nodes       : Number of datacenter
+    Return:
+        z_optimal       : Optimal auxiliary action
+        optimal_cost    : Optimal cost 
+    '''
+    
+    assert vector_gamma.shape == (num_nodes*2,)
+    
+    z = cp.Variable([2*num_nodes])
+    
+    constraints  = []
+    constraints += [z >= 0]
+    constraints += [z <= z_max_array]
+    
+    total_cost    = cp.atoms.norm(z[:num_nodes], "inf") + cp.atoms.norm(z[num_nodes:], "inf") \
+                     - vector_gamma @ z 
+    objective     = cp.Minimize(total_cost)
+    prob          = cp.Problem(objective, constraints)
+    
+    prob.solve(verbose = False)
+    
+    optimal_cost  = prob.value
+    z_optimal     = z.value
     
     
-    price_cost  = l_0*np.sum(price_res)
-    water_cost  = l_1*np.linalg.norm(water_res, ord=np.inf)
-    carbon_cost = l_2*np.linalg.norm(carbon_res, ord=np.inf)
-    
-    total_cost  = price_cost + carbon_cost + water_cost
-    
-    if verbose:
-        print("Electric price  :  {:.3f}".format(price_cost))
-        print("Total water     :  {:.3f}".format(water_cost))
-        print("Total carbon    :  {:.3f}".format(carbon_cost))
-        print("-----")
-        print("Overall Cost    :  {:.3f}".format(total_cost))
-    
-    return total_cost
+    return z_optimal, optimal_cost
+
 
 
