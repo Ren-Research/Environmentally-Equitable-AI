@@ -16,11 +16,13 @@ def expert_DMD_algorithm(price_all_loc, carbon_all_loc, water_all_loc, workload_
     for i in range(N):
         matrix_G[i, i*N:(i+1)*N] = 1
 
-    vector_zt      = 0*np.zeros(2*N)
+    vector_z       = 0*np.zeros(2*N)
     vector_gamma_t = np.zeros(2*N)
 
     action_list = []
-    if debug: gamma_list = []
+    if debug: 
+        gamma_list    = []
+        vector_z_list = []
     
     for t in tqdm(range(num_ins)):
         matrix_ct = np.diag(carbon_all_loc[:,t])
@@ -44,13 +46,16 @@ def expert_DMD_algorithm(price_all_loc, carbon_all_loc, water_all_loc, workload_
         vector_gamma_t = vector_gamma_t + lr_eta*g_t
 
         action_list   += [action_mask]
-        if debug: gamma_list    += [vector_gamma_t]
+        if debug: 
+            gamma_list    += [vector_gamma_t]
+            vector_z_list += [vector_z]
     
     action_list = np.array(action_list).T
     
     if debug:
-        gamma_list  = np.array(gamma_list).T
-        return action_list, gamma_list
+        gamma_list     = np.array(gamma_list).T
+        vector_z_list  = np.array(vector_z_list).T
+        return action_list, gamma_list, vector_z_list
     else:
         return action_list
     
